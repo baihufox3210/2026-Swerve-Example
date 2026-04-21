@@ -3,6 +3,8 @@ package frc.robot.subsystems.Drivetrain;
 import com.GFL.lib.Factory.GyroFactory;
 import com.GFL.lib.hardware.config.GyroConfig;
 import com.GFL.lib.hardware.interfaces.GenericGyro;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
 
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -13,6 +15,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
 import frc.robot.subsystems.Drivetrain.DrivetrainConstants.driveMotorConstants;
@@ -61,10 +64,38 @@ public class Drivetrain extends SubsystemBase {
         publisherField.set(getPose());
     }
 
+    public void configurePathPlanner() {
+        try {
+            AutoBuilder.configure(
+                this::getPose,
+                this::resetPose,
+                this::getRobotSpeeds,
+                (speeds, feedforwards) -> drive(speeds),
+                DrivetrainConstants.holonomicDriveController,
+                RobotConfig.fromGUISettings(),
+                () -> RobotConstants.isRedAlliance(),
+                this
+            );
+        }
+        catch(Exception e) {
+            DriverStation.reportError("Failed to load PathPlanner: " + e.getMessage(), e.getStackTrace());
+        }
+    }
+
+    private ChassisSpeeds getRobotSpeeds() {
+        return DrivetrainConstants.kinematics.toChassisSpeeds(getModuleStates());
+    }
+
     private SwerveModulePosition[] getModulePositions() {
         SwerveModulePosition[] positions = new SwerveModulePosition[4];
         for(int i = 0; i < 4; i++) positions[i] = swerveModules[i].getPosition();
         return positions;
+    }
+
+    private SwerveModuleState[] getModuleStates() {
+        SwerveModuleState[] states = new SwerveModuleState[4];
+        for(int i = 0; i < 4; i++) states[i] = swerveModules[i].getState();
+        return states;
     }
 
     public Rotation2d getHeading() {

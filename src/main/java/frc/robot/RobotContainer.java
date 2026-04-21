@@ -14,6 +14,8 @@ public class RobotContainer {
   	public RobotContainer() {
 		drivetrain.setDefaultCommand(new Drive(controller));
     	configureBindings();
+
+		drivetrain.configurePathPlanner();
   	}
 
   	private void configureBindings() {}
